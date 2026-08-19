@@ -1,0 +1,10 @@
+{
+	"name": "account-ledger-core",
+	"private": true,
+	"type": "module",
+	"engines": { "node": ">=22.6" },
+	"scripts": {
+		"test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.ts\"",
+		"replay": "node --experimental-strip-types --no-warnings src/replay.ts"
+	}
+}
