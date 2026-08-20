@@ -1,7 +1,7 @@
 # Numbers
 
-Numbers are represent as integers with their decimal point on the respective currency. So AED will have 2 decimal points and BHD will be 3 decimal places.
-Scaling is done by multiplying the currency with 10^DP, where DP = number of decimal points.
+Numbers are represented as integers with their decimal point on the respective currency. So AED will have 2 decimal places and BHD will be 3 decimal places.
+Scaling is done by multiplying the currency with 10^DP, where DP = number of decimal places.
 For example, scaling for AED 10.35 would be 
 ``` 
 10.35 X 10 ^ 2 
@@ -28,3 +28,5 @@ Given by the brief:
 Chosen by me ("why this value and not half it"):
 - **Money type: integer minor units** (fils), not float/decimal. Floats can't represent decimal cents exactly and the error compounds across a ledger; integers are exact and only interest introduces a fraction, which is then rounded to a whole minor unit.
 - **Rounding mode for a fractional interest accrual: HALF-UP.** For a 6-day window, rounding up/down to the nearest integer is acceptable enough since any rounding difference is immaterial at this scale.
+
+- **Instalment / penny-allocation split: floor each part, last part absorbs the remainder.** BHD 10.000 into three equal parts -> 3.333 / 3.333 / 3.334, so they sum to exactly the total (E10). This is deliberately a *different* scheme from the interest HALF-UP above: interest rounds a single value to nearest, whereas a split must preserve an exact total, so the last part absorbs the leftover minor unit rather than each part rounding independently (which is how criterion 7's 3.334 x 3 = 10.002 destroys money — see REJECTED).
