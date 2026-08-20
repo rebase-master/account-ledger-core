@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toMinor, formatMinor, EXPONENT } from './money.ts';
+import { toMinor, formatMinor, roundMinor, EXPONENT } from './money.ts';
 
 test('AED currency decimal places', () => {
   assert.equal(EXPONENT.AED, 2)
@@ -55,4 +55,11 @@ test('formatMinor: negative sub-unit BHD value keeps the sign in the right place
 test('formatMinor: negative multi-unit values already worked (regression guard)', () => {
   assert.equal(formatMinor(-37000, 'AED'), '-370.00');
   assert.equal(formatMinor(-15500, 'AED'), '-155.00');
+});
+
+test('roundMinor: rounds to nearest whole fils, ties go up', () => {
+  assert.equal(roundMinor(10.2), 10);
+  assert.equal(roundMinor(10.5), 11);
+  assert.equal(roundMinor(10.52), 11);
+  assert.equal(roundMinor(0.4), 0);
 });

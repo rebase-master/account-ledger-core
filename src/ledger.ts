@@ -1,5 +1,6 @@
 // Fee -> ledger. Auth -> available. Only settlement moves both.
 import type { AccountState, Entry, Hold } from './types.ts';
+import { roundMinor } from './money.ts';
 
 export function closingLedgerBalance(entries: readonly Entry[], day: number): number {
   return entries
@@ -86,4 +87,55 @@ export function settle(
   applyEntry(state, entry);
   hold.state = 'settled';
   return { accepted: true, entry };
+}
+
+const OVERDRAFT_FEE_MINOR = 2500;
+
+export function assessOverdraftFee(state: AccountState, day: number, bookedDay: number): Entry | null {
+  const balance = closingLedgerBalance(state.entries, day);
+  if (balance >= 0) return null;
+
+  const alreadyAssessed = state.entries.some((e) => e.kind === 'fee' && e.valueDate === day);
+  if (alreadyAssessed) return null;
+
+  const fee: Entry = {
+    id: `fee-${state.id}-day${day}`,
+    account: state.id,
+    kind: 'fee',
+    amountMinor: -OVERDRAFT_FEE_MINOR, // account currency; AMBIGUITIES #5
+    currency: state.currency,
+    bookedDay,
+    valueDate: day,
+  };
+  applyEntry(state, fee);
+  return fee;
+}
+
+const DAILY_INTEREST_RATE = 0.0004;
+
+export function accrueInterest(state: AccountState, day: number): number {
+  const balance = closingLedgerBalance(state.entries, day);
+  if (balance <= 0) return 0;
+  return roundMinor(balance * DAILY_INTEREST_RATE);
+}
+
+export function capitalizeInterest(
+  state: AccountState,
+  dailyAccruals: readonly number[],
+  day: number,
+): Entry | null {
+  const total = dailyAccruals.reduce((sum, a) => sum + a, 0);
+  if (total === 0) return null;
+
+  const credit: Entry = {
+    id: `interest-${state.id}-day${day}`,
+    account: state.id,
+    kind: 'interest',
+    amountMinor: total,
+    currency: state.currency,
+    bookedDay: day,
+    valueDate: day,
+  };
+  applyEntry(state, credit);
+  return credit;
 }
