@@ -31,8 +31,7 @@ export function authorize(
   amountMinor: number,
   bookedDay: number,
 ): AuthResult {
-  const activeHolds = [...state.holds.values()].filter((h) => h.state === 'active');
-  const availableNow = availableBalance(state.entries, activeHolds);
+  const availableNow = availableBalance(state.entries, [...state.holds.values()]);
   const availableAfter = availableNow - amountMinor;
 
   if (availableAfter < 0) {

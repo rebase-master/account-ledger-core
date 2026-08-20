@@ -22,7 +22,7 @@ export interface Entry {
   readonly sourceEventId?: string;
 }
 
-export type HoldState = 'active' | 'settled' | 'declined';
+export type HoldState = 'active' | 'settled';
 
 export interface Hold {
   readonly authId: string;

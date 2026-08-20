@@ -31,7 +31,7 @@ test('closingLedgerBalance: a later-arriving backdated entry changes a PAST day 
   assert.equal(closingLedgerBalance(entries, 2), -370_00);
 });
 
-test('availableBalance: active holds reduce it, settled/declined holds do not', () => {
+test('availableBalance: active holds reduce it, settled holds do not', () => {
   const entries = [entry({ id: 'e1', amountMinor: 250_00, valueDate: 1 })];
   const activeHold = { authId: 'A', account: 'ACC-001' as const, amountMinor: 200_00, currency: 'AED' as const, bookedDay: 2, state: 'active' as const };
   const settledHold = { ...activeHold, authId: 'B', state: 'settled' as const };
