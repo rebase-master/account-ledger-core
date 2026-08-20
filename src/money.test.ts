@@ -42,3 +42,17 @@ test('formatMinor: BHD fils becomes a 3dp decimal string', () => {
   assert.equal(formatMinor(10000, 'BHD'), '10.000');
 });
 
+
+test('formatMinor: negative sub-unit AED values keep the sign in the right place', () => {
+  assert.equal(formatMinor(-5, 'AED'), '-0.05');
+  assert.equal(formatMinor(-50, 'AED'), '-0.50');
+});
+
+test('formatMinor: negative sub-unit BHD value keeps the sign in the right place', () => {
+  assert.equal(formatMinor(-5, 'BHD'), '-0.005');
+});
+
+test('formatMinor: negative multi-unit values already worked (regression guard)', () => {
+  assert.equal(formatMinor(-37000, 'AED'), '-370.00');
+  assert.equal(formatMinor(-15500, 'AED'), '-155.00');
+});

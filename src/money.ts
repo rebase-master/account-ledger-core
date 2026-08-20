@@ -18,8 +18,9 @@ export function toMinor(amount: string, ccy: Currency): number {
 // formatMinor(120000, 'AED') -> '1200.00'. .
 export function formatMinor(minor: number, ccy: Currency): string {
   const exp = EXPONENT[ccy];
-  const padded = String(minor).padStart(exp + 1, '0');
+  const negative = minor < 0;
+  const padded = String(Math.abs(minor)).padStart(exp + 1, '0');
   const whole = padded.slice(0, -exp);
   const frac = padded.slice(-exp);
-  return `${whole}.${frac}`;
+  return `${negative ? '-' : ''}${whole}.${frac}`;
 }
