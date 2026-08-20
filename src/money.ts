@@ -24,3 +24,8 @@ export function formatMinor(minor: number, ccy: Currency): string {
   const frac = padded.slice(-exp);
   return `${negative ? '-' : ''}${whole}.${frac}`;
 }
+
+// half-up only for non-negative input
+export function roundMinor(minor: number): number {
+  return Math.round(minor)
+}

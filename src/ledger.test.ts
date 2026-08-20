@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { newAccount } from './types.ts';
 import type { Entry } from './types.ts';
-import { closingLedgerBalance, availableBalance, applyEntry, authorize, settle } from './ledger.ts';
+import { roundMinor } from './money.ts';
+import { closingLedgerBalance, availableBalance, applyEntry, authorize, settle, assessOverdraftFee, accrueInterest, capitalizeInterest } from './ledger.ts';
 
 function entry(o: Partial<Entry> & { id: string; amountMinor: number; valueDate: number }): Entry {
   return {
@@ -97,4 +98,60 @@ test('settle: rejected when the authId has no active hold, and NO entry is poste
   const result = settle(acc, 'Auth-Z', 180_00, 4, 4, 'e6');
   assert.equal(result.accepted, false);
   assert.equal(acc.entries.length, before);
+});
+
+test('assessOverdraftFee: negative day posts -2500 dated to that day', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'e1', amountMinor: -370_00, valueDate: 2 }));
+  const fee = assessOverdraftFee(acc, 2, 5);
+  assert.equal(fee?.amountMinor, -2500);
+  assert.equal(fee?.valueDate, 2);
+  assert.equal(closingLedgerBalance(acc.entries, 2), -370_00 - 2500);
+});
+
+test('assessOverdraftFee: positive day assesses nothing', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'e1', amountMinor: 250_00, valueDate: 1 }));
+  assert.equal(assessOverdraftFee(acc, 1, 1), null);
+});
+
+test('assessOverdraftFee: does not double-assess the same day', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'e1', amountMinor: -100_00, valueDate: 2 }));
+  const first = assessOverdraftFee(acc, 2, 2);
+  const second = assessOverdraftFee(acc, 2, 5);
+  assert.ok(first);
+  assert.equal(second, null);
+});
+
+test('accrueInterest: positive balance accrues 0.04%, rounded', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'e1', amountMinor: 250_00, valueDate: 1 }));
+  assert.equal(accrueInterest(acc, 1), roundMinor(250_00 * 0.0004));
+});
+
+test('accrueInterest: negative or zero balance accrues nothing', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'e1', amountMinor: -155_00, valueDate: 5 }));
+  assert.equal(accrueInterest(acc, 5), 0);
+
+  const zeroAcc = newAccount('ACC-002', 'BHD');
+  assert.equal(accrueInterest(zeroAcc, 1), 0);
+});
+
+test('capitalizeInterest: posts one credit equal to the sum of daily accruals', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  const dailyAccruals = [10, 0, 12, 0, 0, 0];
+  const credit = capitalizeInterest(acc, dailyAccruals, 6);
+  assert.equal(credit?.amountMinor, 22);
+  assert.equal(credit?.valueDate, 6);
+  assert.equal(credit?.kind, 'interest');
+  assert.equal(closingLedgerBalance(acc.entries, 6), 22);
+});
+
+test('capitalizeInterest: posts nothing when accruals sum to zero', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  const credit = capitalizeInterest(acc, [0, 0, 0, 0, 0, 0], 6);
+  assert.equal(credit, null);
+  assert.equal(acc.entries.length, 0);
 });
