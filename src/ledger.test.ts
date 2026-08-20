@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { newAccount } from './types.ts';
 import type { Entry } from './types.ts';
 import { roundMinor } from './money.ts';
-import { closingLedgerBalance, availableBalance, applyEntry, authorize, settle, assessOverdraftFee, accrueInterest, capitalizeInterest } from './ledger.ts';
+import { closingLedgerBalance, availableBalance, applyEntry, authorize, settle, assessOverdraftFee, accrueInterest, capitalizeInterest, reverse } from './ledger.ts';
 
 function entry(o: Partial<Entry> & { id: string; amountMinor: number; valueDate: number }): Entry {
   return {
@@ -154,4 +154,23 @@ test('capitalizeInterest: posts nothing when accruals sum to zero', () => {
   const credit = capitalizeInterest(acc, [0, 0, 0, 0, 0, 0], 6);
   assert.equal(credit, null);
   assert.equal(acc.entries.length, 0);
+});
+
+test('reverse: E9 shape — posts a contra-entry at the ORIGINAL valueDate, not the reversal booking day', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  applyEntry(acc, entry({ id: 'E7', amountMinor: -620_00, valueDate: 2, bookedDay: 5 }));
+  const before = closingLedgerBalance(acc.entries, 6);
+  const result = reverse(acc, 'E7', 6, 'E9');
+  assert.equal(result.accepted, true);
+  assert.equal(result.entry?.amountMinor, 620_00);
+  assert.equal(result.entry?.valueDate, 2);
+  assert.equal(closingLedgerBalance(acc.entries, 6), before + 620_00);
+});
+
+test('reverse: unknown entry id is rejected, nothing posted', () => {
+  const acc = newAccount('ACC-001', 'AED');
+  const before = acc.entries.length;
+  const result = reverse(acc, 'no-such-entry', 6, 'E9');
+  assert.equal(result.accepted, false);
+  assert.equal(acc.entries.length, before);
 });

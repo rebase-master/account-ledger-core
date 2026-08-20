@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toMinor, formatMinor, roundMinor, EXPONENT } from './money.ts';
+import { toMinor, formatMinor, roundMinor, splitInstalments, EXPONENT } from './money.ts';
 
 test('AED currency decimal places', () => {
   assert.equal(EXPONENT.AED, 2)
@@ -62,4 +62,17 @@ test('roundMinor: rounds to nearest whole fils, ties go up', () => {
   assert.equal(roundMinor(10.5), 11);
   assert.equal(roundMinor(10.52), 11);
   assert.equal(roundMinor(0.4), 0);
+});
+
+test('splitInstalments: E10 shape — BHD 10.000 into 3 parts absorbs the remainder in the last part', () => {
+  assert.deepEqual(splitInstalments(10000, 3), [3333, 3333, 3334]);
+  assert.equal(splitInstalments(10000, 3).reduce((a, b) => a + b, 0), 10000);
+});
+
+test('splitInstalments: exact division needs no absorption', () => {
+  assert.deepEqual(splitInstalments(9000, 3), [3000, 3000, 3000]);
+});
+
+test('splitInstalments: n=1 returns the whole amount', () => {
+  assert.deepEqual(splitInstalments(500, 1), [500]);
 });
