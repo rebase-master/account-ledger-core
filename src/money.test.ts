@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toMinor, EXPONENT } from './money.ts';
+import { toMinor, formatMinor, EXPONENT } from './money.ts';
 
 test('AED currency decimal places', () => {
   assert.equal(EXPONENT.AED, 2)
@@ -29,3 +29,16 @@ test('toMinor: zero is zero', () => {
 test('toMinor: more decimal places than the currency allows must throw, not truncate', () => {
   assert.throws(() => toMinor('1.234', 'AED'), /decimal|precision|places|fraction/i);
 });
+
+test('formatMinor: AED fils becomes a 2dp decimal string', () => {
+  assert.equal(formatMinor(120000, 'AED'), '1200.00');
+});
+
+test('formatMinor: AED fils small amount', () => {
+  assert.equal(formatMinor(5, 'AED'), '0.05');
+});
+
+test('formatMinor: BHD fils becomes a 3dp decimal string', () => {
+  assert.equal(formatMinor(10000, 'BHD'), '10.000');
+});
+

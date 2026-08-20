@@ -14,3 +14,12 @@ export function toMinor(amount: string, ccy: Currency): number {
   const paddedFrac = fracPart.padEnd(EXPONENT[ccy], '0'); // '5' -> '50' (AED), '' -> '00'
   return Number(intPart + paddedFrac);
 }
+
+// formatMinor(120000, 'AED') -> '1200.00'. .
+export function formatMinor(minor: number, ccy: Currency): string {
+  const exp = EXPONENT[ccy];
+  const padded = String(minor).padStart(exp + 1, '0');
+  const whole = padded.slice(0, -exp);
+  const frac = padded.slice(-exp);
+  return `${whole}.${frac}`;
+}
