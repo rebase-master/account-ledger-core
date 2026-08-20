@@ -1,6 +1,6 @@
 // Fee -> ledger. Auth -> available. Only settlement moves both.
 import type { AccountState, Entry, Hold } from './types.ts';
-import { roundMinor } from './money.ts';
+import { roundMinor, formatMinor } from './money.ts';
 
 export function closingLedgerBalance(entries: readonly Entry[], day: number): number {
   return entries
@@ -38,7 +38,7 @@ export function authorize(
   if (availableAfter < 0) {
     return {
       approved: false,
-      reason: `available ${availableNow} - hold ${amountMinor} = ${availableAfter} < 0`,
+      reason: `available ${formatMinor(availableNow, state.currency)} - hold ${formatMinor(amountMinor, state.currency)} = ${formatMinor(availableAfter, state.currency)} < 0`,
     };
   }
 
@@ -138,4 +138,35 @@ export function capitalizeInterest(
   };
   applyEntry(state, credit);
   return credit;
+}
+
+export interface ReverseResult {
+  readonly accepted: boolean;
+  readonly entry?: Entry;
+  readonly reason?: string;
+}
+
+export function reverse(
+  state: AccountState,
+  reversedEntryId: string,
+  bookedDay: number,
+  entryId: string,
+): ReverseResult {
+  const original = state.entries.find((e) => e.id === reversedEntryId);
+  if (!original) {
+    return { accepted: false, reason: `no entry "${reversedEntryId}" to reverse on ${state.id}` };
+  }
+
+  const entry: Entry = {
+    id: entryId,
+    account: state.id,
+    kind: 'reversal',
+    amountMinor: -original.amountMinor,
+    currency: original.currency,
+    bookedDay,
+    valueDate: original.valueDate,
+    sourceEventId: entryId,
+  };
+  applyEntry(state, entry);
+  return { accepted: true, entry };
 }

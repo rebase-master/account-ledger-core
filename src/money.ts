@@ -29,3 +29,10 @@ export function formatMinor(minor: number, ccy: Currency): string {
 export function roundMinor(minor: number): number {
   return Math.round(minor)
 }
+
+export function splitInstalments(totalMinor: number, n: number): number[] {
+  const base = Math.floor(totalMinor / n);
+  const parts = new Array(n).fill(base);
+  parts[n - 1] = totalMinor - base * (n - 1);
+  return parts;
+}
